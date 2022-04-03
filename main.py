@@ -36,15 +36,20 @@ root = tk.Tk()
 take_photo = tk.Button(root, text="Take a photo", command=click_1)
 create_model = tk.Button(root, text="Create model", command=click_2)
 predict_user = tk.Button(root, text="Predict user", command=click_3)
+
+v = tk.StringVar(root, value='Kim jestes?')
 user_name = tk.Entry(root)
+whoami = tk.Entry(root,textvariable=v)
 predicted_user = tk.Label(root, text="")
 take_photo.grid(row=1, column=1)
 create_model.grid(row=2, column=1)
 predict_user.grid(row=3, column=1)
 user_name.grid(row=1, column=2)
 predicted_user.grid(row=3, column=2)
+
 l = tk.Label(root)
 l.grid(row=4, column=2)
+whoami.grid(row=4,column=1)
 # To capture video from webcam.
 cap = cv2.VideoCapture(0)
 # To use a video file as input
@@ -91,7 +96,7 @@ while True:
                 for (x, y, w, h) in faces:
                     img_to_photo = img[y:y + w, x:x + h]
                     #u = predikt(img_to_photo)
-                    u = input_test(img_to_photo, 'predict/signature.txt', 'predict/wrist.csv',"Pawel")
+                    u = input_test(img_to_photo, 'predict/signature.txt', 'predict/wrist.csv',str(whoami.get()))
                     predicted_user.config(text=str(u))
             else:
                  predicted_user.config(text="Nie wykryto twarzy!")
