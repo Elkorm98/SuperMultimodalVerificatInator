@@ -7,7 +7,7 @@ import cv2
 import os
 from modules import *
 from PIL import Image, ImageTk
-
+from pipeline2 import feature_extraction2, training_testing_report2, transformations_concatenation1
 clicked1 = False
 clicked2 = False
 clicked3 = False
@@ -70,7 +70,16 @@ while True:
             predicted_user.config(text="Nie wykryto twarzy!")
         clicked1 = False
     if clicked2:
-        pca_algorithm()
+        (train_sig_X, train_sig_Y, test_sig_X, test_sig_Y,
+         train_img_X, train_img_Y, test_img_X, test_img_Y,
+         train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y) = feature_extraction2()
+        (trainX, trainY, testX, testY) = transformations_concatenation1(train_sig_X, train_sig_Y, test_sig_X,
+                                                                        test_sig_Y,
+                                                                        train_img_X, train_img_Y, test_img_X,
+                                                                        test_img_Y,
+                                                                        train_wrist_X, train_wrist_Y, test_wrist_X,
+                                                                        test_wrist_Y)
+        class_model = training_testing_report2(trainX, trainY, testX, testY)
         is_model = True
         clicked2 = False
     if clicked3:
