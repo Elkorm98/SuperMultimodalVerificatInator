@@ -7,7 +7,7 @@ import cv2
 import os
 from modules import *
 from PIL import Image, ImageTk
-from pipeline2 import feature_extraction2, training_testing_report2, transformations_concatenation1
+from pipeline2 import feature_extraction2, training_testing_report2, transformations_concatenation1, input_test
 clicked1 = False
 clicked2 = False
 clicked3 = False
@@ -80,7 +80,9 @@ while True:
                                                                         train_wrist_X, train_wrist_Y, test_wrist_X,
                                                                         test_wrist_Y)
         class_model = training_testing_report2(trainX, trainY, testX, testY)
+        input_test(cv2.imread("users/Szymon/faces/img_130122200553.jpg"), "users/Szymon/signatures/predict1.txt", "users/Szymon/wrist_gyroscope/20220322_152308_Gyroscope.csv", "Szymon")
         is_model = True
+
         clicked2 = False
     if clicked3:
         if is_model:

@@ -9,117 +9,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import classification_report
 from sklearn.decomposition import PCA
 from sklearn.naive_bayes import GaussianNB
-seed=25
-decision_threshold=0.6
-# comp_discard=3
-comp_img=20
-comp_sig=8
-comp_wrist=4
-labels = []
 
-def feature_extraction2():
-    root = "./users/"
-    global labels
-    image_matrix = []
-    image_labels = []
-    wrist_matrix = []
-    signature_features_matrix = []
-    signature_labels = []
-    wrist_labels = []
-    for user in os.listdir(f'{root}'):
-        labels.append(user)
-        for filename in os.listdir(f'{root}/{user}/faces'):
-            img = cv2.imread(f'{root}/{user}/faces/{filename}')
-            # print(img.shape)
-            img = cv2.resize(img, (120, 120))
-            # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            # img = img.flatten()
-            image_matrix.append(np.array(img))
-            image_labels.append(labels.index(user))
-        for filename in os.listdir(f'{root}/{user}/signatures'):
-            signature = read_signature(f'{root}/{user}/signatures/{filename}')
-            # print(img.shape)
-            stats = get_stats(signature)
-            if stats[1] > 0 and stats[0] < 1:
-                signature_features_matrix.append(stats)
-                signature_labels.append(labels.index(user))
-        for filename in os.listdir(f'{root}/{user}/wrist_gyroscope'):
-            # print(f'{root}/{user}/wrist_gyroscope/{filename}')
-            wrist_matrix.append(read_wrist_csv(f'{root}/{user}/wrist_gyroscope/{filename}'))
-            # print(img.shape)
-            wrist_labels.append(labels.index(user))
-
-    IMG_SIZE = (120, 120)
-    IMG_SHAPE = IMG_SIZE + (3,)
-    base_model = tf.keras.applications.vgg16.VGG16(input_shape=IMG_SHAPE,
-                                                   include_top=False,
-                                                   weights='imagenet')
-    preprocess_input = tf.keras.applications.vgg16.preprocess_input
-    global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
-    inputs = tf.keras.Input(shape=(120, 120, 3))
-    x = preprocess_input(inputs)
-    x = base_model(x, training=False)
-    outputs = global_average_layer(x)
-    model = tf.keras.Model(inputs, outputs)
-
-    image_matrix = model.predict(np.array(image_matrix))
-
-    train_sig_X, train_sig_Y, test_sig_X, test_sig_Y = split_mono_set(signature_features_matrix, signature_labels, seed)
-    train_img_X, train_img_Y, test_img_X, test_img_Y = split_mono_set(image_matrix, image_labels, seed)
-    train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y = split_mono_set(wrist_matrix, wrist_labels, seed)
-    return train_sig_X, train_sig_Y, test_sig_X, test_sig_Y, train_img_X, train_img_Y, test_img_X, test_img_Y, train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y
-
-def training_testing_report2(trainX, trainY, testX, testY):
-  class_model = GaussianNB()
-  class_model.fit(trainX, trainY)
-  predictions = class_model.predict(testX)
-  global labels
-  res=classification_report(testY, predictions, target_names=labels)
-  print(res)
-  return class_model
-
-def transformations_concatenation1(train_sig_X, train_sig_Y, test_sig_X, test_sig_Y,
-                                     train_img_X, train_img_Y, test_img_X, test_img_Y,
-                                     train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y):
-  pca = PCA(svd_solver="randomized",n_components=comp_img, whiten=True)
-  train_img_X = pca.fit_transform(np.array(train_img_X))
-
-
-  scaler_sig = StandardScaler()
-  train_sig_X=scaler_sig.fit_transform(train_sig_X)
-  pca_sig = PCA(svd_solver="randomized", n_components=comp_sig, whiten=True)
-  train_sig_X=pca_sig.fit_transform(train_sig_X)
-  # train_sig_X=np.fliplr(train_sig_X)
-
-  scaler_wrist= StandardScaler()
-  train_wrist_X=scaler_wrist.fit_transform(train_wrist_X)
-  pca_wrist = PCA(svd_solver="randomized", n_components=comp_wrist, whiten=True)
-  train_wrist_X=pca_wrist.fit_transform(train_wrist_X)
-  # train_wrist_X=np.fliplr(train_wrist_X)
-
-  test_img_X=pca.transform(np.array(test_img_X))
-
-  test_sig_X = scaler_sig.transform(np.array(test_sig_X))
-  test_sig_X = pca_sig.transform(test_sig_X)
-  # test_sig_X = np.fliplr(test_sig_X)
-
-  test_wrist_X = scaler_wrist.transform(np.array(test_wrist_X))
-  test_wrist_X = pca_wrist.transform(test_wrist_X)
-  # test_sig_X = np.fliplr(test_sig_X)
-
-  merged_trainX, merged_trainY = merge_sets(train_img_X, train_sig_X, train_wrist_X, train_img_Y,
-                                                      train_sig_Y,train_wrist_Y)
-  train_img_X, train_sig_X, train_wrist_X = split_sets_back(merged_trainX)
-
-  merged_testX, merged_testY = merge_sets(test_img_X, test_sig_X, test_wrist_X, test_img_Y,
-                                                      test_sig_Y,test_wrist_Y)
-  test_img_X, test_sig_X, test_wrist_X = split_sets_back(merged_testX)
-
-  trainX=np.concatenate((np.array(train_img_X),np.array(train_sig_X),np.array(train_wrist_X)),axis=1)
-  trainY=merged_trainY
-  testX=np.concatenate((np.array(test_img_X),np.array(test_sig_X),np.array(test_wrist_X)),axis=1)
-  testY=merged_testY
-  return trainX, trainY, testX, testY
 
 def read_wrist_csv2(filename):
   dataframe = pd.read_csv(filename, skiprows=3)
@@ -369,3 +259,163 @@ def read_signature(path):
   with open(path) as f:
     lines = f.readlines()
   return lines
+
+def decision_module(class_model,X, Y):
+  X=np.array(X)
+  Y=np.array(Y)
+  dim=X.ndim
+  if (dim==1):
+    X = np.array([X])
+    Y = np.array([Y])
+  res = np.array(class_model.predict_proba(X))
+  res_matrix = np.array([np.argmax(res,axis=1),np.max(res,axis=1)])
+  max_cond = np.array(Y) == res_matrix[0]
+  thresh_cond = decision_threshold < res_matrix[1]
+  test_res = thresh_cond * max_cond
+  # print(Y)
+  # print(res_matrix)
+  if(dim==1):
+    return test_res[0]
+  else:
+    return test_res
+
+
+seed=25
+decision_threshold=0.6
+# comp_discard=3
+comp_img=20
+comp_sig=8
+comp_wrist=4
+labels = []
+
+def feature_extraction2():
+    root = "./users/"
+    global labels
+    image_matrix = []
+    image_labels = []
+    wrist_matrix = []
+    signature_features_matrix = []
+    signature_labels = []
+    wrist_labels = []
+    for user in os.listdir(f'{root}'):
+        labels.append(user)
+        for filename in os.listdir(f'{root}/{user}/faces'):
+            img = cv2.imread(f'{root}/{user}/faces/{filename}')
+            # print(img.shape)
+            img = cv2.resize(img, (120, 120))
+            # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # img = img.flatten()
+            image_matrix.append(np.array(img))
+            image_labels.append(labels.index(user))
+        for filename in os.listdir(f'{root}/{user}/signatures'):
+            signature = read_signature(f'{root}/{user}/signatures/{filename}')
+            # print(img.shape)
+            stats = get_stats(signature)
+            if stats[1] > 0 and stats[0] < 1:
+                signature_features_matrix.append(stats)
+                signature_labels.append(labels.index(user))
+        for filename in os.listdir(f'{root}/{user}/wrist_gyroscope'):
+            # print(f'{root}/{user}/wrist_gyroscope/{filename}')
+            wrist_matrix.append(read_wrist_csv(f'{root}/{user}/wrist_gyroscope/{filename}'))
+            # print(img.shape)
+            wrist_labels.append(labels.index(user))
+
+    IMG_SIZE = (120, 120)
+    IMG_SHAPE = IMG_SIZE + (3,)
+    base_model = tf.keras.applications.vgg16.VGG16(input_shape=IMG_SHAPE,
+                                                   include_top=False,
+                                                   weights='imagenet')
+    preprocess_input = tf.keras.applications.vgg16.preprocess_input
+    global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
+    inputs = tf.keras.Input(shape=(120, 120, 3))
+    x = preprocess_input(inputs)
+    x = base_model(x, training=False)
+    outputs = global_average_layer(x)
+
+    global model
+    model = tf.keras.Model(inputs, outputs)
+
+    image_matrix = model.predict(np.array(image_matrix))
+
+    train_sig_X, train_sig_Y, test_sig_X, test_sig_Y = split_mono_set(signature_features_matrix, signature_labels, seed)
+    train_img_X, train_img_Y, test_img_X, test_img_Y = split_mono_set(image_matrix, image_labels, seed)
+    train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y = split_mono_set(wrist_matrix, wrist_labels, seed)
+    return train_sig_X, train_sig_Y, test_sig_X, test_sig_Y, train_img_X, train_img_Y, test_img_X, test_img_Y, train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y
+
+def training_testing_report2(trainX, trainY, testX, testY):
+  global class_model, labels
+  class_model = GaussianNB()
+  class_model.fit(trainX, trainY)
+  predictions = class_model.predict(testX)
+  res=classification_report(testY, predictions, target_names=labels)
+  print(res)
+  return class_model
+
+def transformations_concatenation1(train_sig_X, train_sig_Y, test_sig_X, test_sig_Y,
+                                     train_img_X, train_img_Y, test_img_X, test_img_Y,
+                                     train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y):
+  global pca, scaler_sig, pca_sig, scaler_wrist, pca_wrist
+  pca = PCA(svd_solver="randomized",n_components=comp_img, whiten=True)
+  train_img_X = pca.fit_transform(np.array(train_img_X))
+
+
+  scaler_sig = StandardScaler()
+  train_sig_X=scaler_sig.fit_transform(train_sig_X)
+  pca_sig = PCA(svd_solver="randomized", n_components=comp_sig, whiten=True)
+  train_sig_X=pca_sig.fit_transform(train_sig_X)
+  # train_sig_X=np.fliplr(train_sig_X)
+
+  scaler_wrist= StandardScaler()
+  train_wrist_X=scaler_wrist.fit_transform(train_wrist_X)
+  pca_wrist = PCA(svd_solver="randomized", n_components=comp_wrist, whiten=True)
+  train_wrist_X=pca_wrist.fit_transform(train_wrist_X)
+  # train_wrist_X=np.fliplr(train_wrist_X)
+
+  test_img_X=pca.transform(np.array(test_img_X))
+
+  test_sig_X = scaler_sig.transform(np.array(test_sig_X))
+  test_sig_X = pca_sig.transform(test_sig_X)
+  # test_sig_X = np.fliplr(test_sig_X)
+
+  test_wrist_X = scaler_wrist.transform(np.array(test_wrist_X))
+  test_wrist_X = pca_wrist.transform(test_wrist_X)
+  # test_sig_X = np.fliplr(test_sig_X)
+
+  merged_trainX, merged_trainY = merge_sets(train_img_X, train_sig_X, train_wrist_X, train_img_Y,
+                                                      train_sig_Y,train_wrist_Y)
+  train_img_X, train_sig_X, train_wrist_X = split_sets_back(merged_trainX)
+
+  merged_testX, merged_testY = merge_sets(test_img_X, test_sig_X, test_wrist_X, test_img_Y,
+                                                      test_sig_Y,test_wrist_Y)
+  test_img_X, test_sig_X, test_wrist_X = split_sets_back(merged_testX)
+
+  trainX=np.concatenate((np.array(train_img_X),np.array(train_sig_X),np.array(train_wrist_X)),axis=1)
+  trainY=merged_trainY
+  testX=np.concatenate((np.array(test_img_X),np.array(test_sig_X),np.array(test_wrist_X)),axis=1)
+  testY=merged_testY
+  return trainX, trainY, testX, testY
+
+def input_test(img, sig_filename, wrist_filename, username):
+    global model, pca, scaler_sig, pca_sig, scaler_wrist, pca_wrist, class_model
+    img=np.array(img)
+    img = cv2.resize(img, (120, 120))
+    img = np.array(img)
+    signature = read_signature(sig_filename)
+    sig_stats = get_stats(signature)
+    wrist_stats=read_wrist_csv(wrist_filename)
+
+    img_X= model.predict(np.array([img]))
+    img_X= pca.transform(np.array(img_X))
+
+    sig_X = scaler_sig.transform(np.array([sig_stats]))
+    sig_X = pca_sig.transform(sig_X)
+
+    wrist_X = scaler_wrist.transform(np.array([wrist_stats]))
+    wrist_X = pca_wrist.transform(wrist_X)
+
+    X = np.concatenate((np.array(img_X), np.array(sig_X), np.array(wrist_X)), axis=1)
+    answer=decision_module(class_model, X, labels.index(username))
+    print(answer)
+
+
+
