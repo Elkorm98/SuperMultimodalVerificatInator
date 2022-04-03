@@ -9,7 +9,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import classification_report
 from sklearn.decomposition import PCA
 from sklearn.naive_bayes import GaussianNB
-
+import sqlite3
 
 def read_wrist_csv2(filename):
   dataframe = pd.read_csv(filename, skiprows=3)
@@ -336,6 +336,22 @@ def feature_extraction2():
     model = tf.keras.Model(inputs, outputs)
 
     image_matrix = model.predict(np.array(image_matrix))
+
+    ##########################################################3
+    conn = sqlite3.connect('Database.db')
+    print("Opened database successfully")
+    for i in range(len(image_matrix)):
+        conn.execute(f'INSERT INTO ImageTable (id,label,img_feature) VALUES ({i},{image_labels[i]},{image_matrix[i]})')
+    for i in range(len(image_matrix)):
+        conn.execute(f'INSERT INTO SignatureTable (id,label,sig_feature) VALUES ({i},{signature_labels[i]},{signature_features_matrix[i]})')
+    for i in range(len(image_matrix)):
+        conn.execute(f'INSERT INTO WristTable (id,label,wir_feature) VALUES ({i},{wrist_labels[i]},{wrist_matrix[i]})')
+    conn.commit()
+    print("Records created successfully");
+    conn.close()
+    ##########################################################3
+
+
 
     train_sig_X, train_sig_Y, test_sig_X, test_sig_Y = split_mono_set(signature_features_matrix, signature_labels, seed)
     train_img_X, train_img_Y, test_img_X, test_img_Y = split_mono_set(image_matrix, image_labels, seed)

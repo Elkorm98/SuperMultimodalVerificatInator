@@ -8,6 +8,8 @@ import os
 from modules import *
 from PIL import Image, ImageTk
 from pipeline2 import feature_extraction2, training_testing_report2, transformations_concatenation1, input_test
+
+
 clicked1 = False
 clicked2 = False
 clicked3 = False
