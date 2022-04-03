@@ -90,8 +90,9 @@ while True:
             if len(faces) != 0:
                 for (x, y, w, h) in faces:
                     img_to_photo = img[y:y + w, x:x + h]
-                    u = predikt(img_to_photo)
-                    predicted_user.config(text=u)
+                    #u = predikt(img_to_photo)
+                    u = input_test(img_to_photo, 'predict/signature.txt', 'predict/wrist.csv')
+                    predicted_user.config(text=str(u))
             else:
                  predicted_user.config(text="Nie wykryto twarzy!")
         else:
