@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import librosa
 import pandas as pd
-#import tensorflow as tf
+import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import classification_report
@@ -416,6 +416,7 @@ def input_test(img, sig_filename, wrist_filename, username):
     X = np.concatenate((np.array(img_X), np.array(sig_X), np.array(wrist_X)), axis=1)
     answer=decision_module(class_model, X, labels.index(username))
     print(answer)
+    return answer
 
 
 
