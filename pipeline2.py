@@ -4,17 +4,22 @@ import numpy as np
 import librosa
 import pandas as pd
 import tensorflow as tf
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.metrics import classification_report
+from sklearn.decomposition import PCA
+from sklearn.naive_bayes import GaussianNB
 seed=25
 decision_threshold=0.6
 # comp_discard=3
 comp_img=20
 comp_sig=8
 comp_wrist=4
-
+labels = []
 
 def feature_extraction2():
     root = "./users/"
-    labels = []
+    global labels
     image_matrix = []
     image_labels = []
     wrist_matrix = []
@@ -68,6 +73,7 @@ def training_testing_report2(trainX, trainY, testX, testY):
   class_model = GaussianNB()
   class_model.fit(trainX, trainY)
   predictions = class_model.predict(testX)
+  global labels
   res=classification_report(testY, predictions, target_names=labels)
   print(res)
   return class_model
