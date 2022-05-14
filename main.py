@@ -95,7 +95,8 @@ while True:
             #         img_to_photo = img[y:y + w, x:x + h]
             # u = predikt()
             u = input_test('predict/signature.txt', 'predict/wrist.csv',str(whoami.get()))
-            #         predicted_user.config(text=str(u))
+            predicted_user.config(text=str(u))
+                    # predicted_user.config(text=str(u))
             # else:
             #      predicted_user.config(text="Nie wykryto twarzy!")
         else:
