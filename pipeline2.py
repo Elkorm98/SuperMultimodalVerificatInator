@@ -82,14 +82,12 @@ def read_wrist_csv(filename):
 
 
 def split_sets_back(merged_matrix):
-    img_matrix=[]
     sig_matrix=[]
     wrist_matrix=[]
     for  it in merged_matrix:
-        img_matrix.append(it[0])
-        sig_matrix.append(it[1])
-        wrist_matrix.append(it[2])
-    return img_matrix,sig_matrix, wrist_matrixc
+        sig_matrix.append(it[0])
+        wrist_matrix.append(it[1])
+    return sig_matrix, wrist_matrix
 
 def split_mono_set(array, labels,seed):
     traincX = []
@@ -113,6 +111,19 @@ def merge_sets(img_matrix,signature_matrix,wrist_matrix,image_labels,signature_l
       # if(image_labels[count]==signature_labels[count2]):
       merged_array.append([img_matrix[count],signature_matrix[count],wrist_matrix[count]])
       new_labels.append(image_labels[count])
+  return merged_array,new_labels
+
+def merge_sets_simple(signature_matrix,wrist_matrix,signature_labels,wrist_labels):
+  merged_array=[]
+  new_labels=[]
+  for count ,sig in enumerate(signature_matrix):
+    for count2, wrist in enumerate(wrist_matrix):
+      if(wrist_labels[count2]==signature_labels[count]):
+        merged_array.append([signature_matrix[count],wrist_matrix[count2]])
+        wrist_labels=np.delete(wrist_labels, count2, 0)
+        wrist_matrix=np.delete(wrist_matrix, count2, 0)
+        new_labels.append(signature_labels[count])
+        break
   return merged_array,new_labels
 
 # euclidean distnace between 2 points (input 2 points)
@@ -289,7 +300,8 @@ labels = []
 
 def feature_extraction2():
     root = "./users/"
-    global labels
+    global labels, image_matrix, image_labels, wrist_matrix, signature_features_matrix, signature_labels, wrist_labels
+    labels = []
     image_matrix = []
     image_labels = []
     wrist_matrix = []
@@ -298,14 +310,14 @@ def feature_extraction2():
     wrist_labels = []
     for user in os.listdir(f'{root}'):
         labels.append(user)
-        for filename in os.listdir(f'{root}/{user}/faces'):
-            img = cv2.imread(f'{root}/{user}/faces/{filename}')
-            # print(img.shape)
-            img = cv2.resize(img, (120, 120))
-            # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            # img = img.flatten()
-            image_matrix.append(np.array(img))
-            image_labels.append(labels.index(user))
+        # for filename in os.listdir(f'{root}/{user}/faces'):
+        #     img = cv2.imread(f'{root}/{user}/faces/{filename}')
+        #     # print(img.shape)
+        #     img = cv2.resize(img, (120, 120))
+        #     # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        #     # img = img.flatten()
+        #     image_matrix.append(np.array(img))
+        #     image_labels.append(labels.index(user))
         for filename in os.listdir(f'{root}/{user}/signatures'):
             signature = read_signature(f'{root}/{user}/signatures/{filename}')
             # print(img.shape)
@@ -319,43 +331,10 @@ def feature_extraction2():
             # print(img.shape)
             wrist_labels.append(labels.index(user))
 
-    IMG_SIZE = (120, 120)
-    IMG_SHAPE = IMG_SIZE + (3,)
-    base_model = tf.keras.applications.vgg16.VGG16(input_shape=IMG_SHAPE,
-                                                   include_top=False,
-                                                   weights='imagenet')
-    preprocess_input = tf.keras.applications.vgg16.preprocess_input
-    global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
-    inputs = tf.keras.Input(shape=(120, 120, 3))
-    x = preprocess_input(inputs)
-    x = base_model(x, training=False)
-    outputs = global_average_layer(x)
-
-    global model
-    model = tf.keras.Model(inputs, outputs)
-
-    image_matrix = model.predict(np.array(image_matrix))
-
-    ##########################################################3
-    conn = sqlite3.connect('Database.db')
-    print("Opened database successfully")
-    for i in range(len(image_matrix)):
-        conn.execute(f'INSERT INTO ImageTable (id,label,img_feature) VALUES ({i},{image_labels[i]},{image_matrix[i]})')
-    for i in range(len(image_matrix)):
-        conn.execute(f'INSERT INTO SignatureTable (id,label,sig_feature) VALUES ({i},{signature_labels[i]},{signature_features_matrix[i]})')
-    for i in range(len(image_matrix)):
-        conn.execute(f'INSERT INTO WristTable (id,label,wir_feature) VALUES ({i},{wrist_labels[i]},{wrist_matrix[i]})')
-    conn.commit()
-    print("Records created successfully");
-    conn.close()
-    ##########################################################3
-
-
-
     train_sig_X, train_sig_Y, test_sig_X, test_sig_Y = split_mono_set(signature_features_matrix, signature_labels, seed)
-    train_img_X, train_img_Y, test_img_X, test_img_Y = split_mono_set(image_matrix, image_labels, seed)
+    # train_img_X, train_img_Y, test_img_X, test_img_Y = split_mono_set(image_matrix, image_labels,seed)
     train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y = split_mono_set(wrist_matrix, wrist_labels, seed)
-    return train_sig_X, train_sig_Y, test_sig_X, test_sig_Y, train_img_X, train_img_Y, test_img_X, test_img_Y, train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y
+    return train_sig_X, train_sig_Y, test_sig_X, test_sig_Y, train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y
 
 def training_testing_report2(trainX, trainY, testX, testY):
   global class_model, labels
@@ -367,48 +346,51 @@ def training_testing_report2(trainX, trainY, testX, testY):
   return class_model
 
 def transformations_concatenation1(train_sig_X, train_sig_Y, test_sig_X, test_sig_Y,
-                                     train_img_X, train_img_Y, test_img_X, test_img_Y,
                                      train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y):
-  global pca, scaler_sig, pca_sig, scaler_wrist, pca_wrist
-  pca = PCA(svd_solver="randomized",n_components=comp_img, whiten=True)
-  train_img_X = pca.fit_transform(np.array(train_img_X))
+    global labels, scaler_sig, pca_sig, scaler_wrist, pca_wrist, image_matrix, image_labels, wrist_matrix, signature_features_matrix, signature_labels, wrist_labels
 
+    # train_sig_X, train_sig_Y, test_sig_X, test_sig_Y = split_mono_set(signature_features_matrix, signature_labels,seed)
+    # # train_img_X, train_img_Y, test_img_X, test_img_Y = split_mono_set(image_matrix, image_labels,seed)
+    # train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y = split_mono_set(wrist_matrix, wrist_labels,seed)
 
-  scaler_sig = StandardScaler()
-  train_sig_X=scaler_sig.fit_transform(train_sig_X)
-  pca_sig = PCA(svd_solver="randomized", n_components=comp_sig, whiten=True)
-  train_sig_X=pca_sig.fit_transform(train_sig_X)
-  # train_sig_X=np.fliplr(train_sig_X)
+    # pca = PCA(svd_solver="randomized",n_components=len(train_sig_X[0])-comp_discard, whiten=True)
+    # train_img_X = pca.fit_transform(np.array(train_img_X))
 
-  scaler_wrist= StandardScaler()
-  train_wrist_X=scaler_wrist.fit_transform(train_wrist_X)
-  pca_wrist = PCA(svd_solver="randomized", n_components=comp_wrist, whiten=True)
-  train_wrist_X=pca_wrist.fit_transform(train_wrist_X)
-  # train_wrist_X=np.fliplr(train_wrist_X)
+    scaler_sig = StandardScaler()
+    train_sig_X = scaler_sig.fit_transform(train_sig_X)
+    pca_sig = PCA(svd_solver="randomized", n_components=comp_sig, whiten=True)
+    train_sig_X = pca_sig.fit_transform(train_sig_X)
+    # train_sig_X=np.fliplr(train_sig_X)
 
-  test_img_X=pca.transform(np.array(test_img_X))
+    scaler_wrist = StandardScaler()
+    train_wrist_X = scaler_wrist.fit_transform(train_wrist_X)
+    pca_wrist = PCA(svd_solver="randomized", n_components=comp_wrist, whiten=True)
+    train_wrist_X = pca_wrist.fit_transform(train_wrist_X)
+    # train_wrist_X=np.fliplr(train_wrist_X)
 
-  test_sig_X = scaler_sig.transform(np.array(test_sig_X))
-  test_sig_X = pca_sig.transform(test_sig_X)
-  # test_sig_X = np.fliplr(test_sig_X)
+    # test_img_X=pca.transform(np.array(test_img_X))
 
-  test_wrist_X = scaler_wrist.transform(np.array(test_wrist_X))
-  test_wrist_X = pca_wrist.transform(test_wrist_X)
-  # test_sig_X = np.fliplr(test_sig_X)
+    test_sig_X = scaler_sig.transform(np.array(test_sig_X))
+    test_sig_X = pca_sig.transform(test_sig_X)
+    # test_sig_X = np.fliplr(test_sig_X)
 
-  merged_trainX, merged_trainY = merge_sets(train_img_X, train_sig_X, train_wrist_X, train_img_Y,
-                                                      train_sig_Y,train_wrist_Y)
-  train_img_X, train_sig_X, train_wrist_X = split_sets_back(merged_trainX)
+    test_wrist_X = scaler_wrist.transform(np.array(test_wrist_X))
+    test_wrist_X = pca_wrist.transform(test_wrist_X)
+    # test_sig_X = np.fliplr(test_sig_X)
 
-  merged_testX, merged_testY = merge_sets(test_img_X, test_sig_X, test_wrist_X, test_img_Y,
-                                                      test_sig_Y,test_wrist_Y)
-  test_img_X, test_sig_X, test_wrist_X = split_sets_back(merged_testX)
+    merged_trainX, merged_trainY = merge_sets_simple(train_sig_X, train_wrist_X,
+                                                     train_sig_Y, train_wrist_Y)
+    train_sig_X, train_wrist_X = split_sets_back(merged_trainX)
 
-  trainX=np.concatenate((np.array(train_img_X),np.array(train_sig_X),np.array(train_wrist_X)),axis=1)
-  trainY=merged_trainY
-  testX=np.concatenate((np.array(test_img_X),np.array(test_sig_X),np.array(test_wrist_X)),axis=1)
-  testY=merged_testY
-  return trainX, trainY, testX, testY
+    merged_testX, merged_testY = merge_sets_simple(test_sig_X, test_wrist_X,
+                                                   test_sig_Y, test_wrist_Y)
+    test_sig_X, test_wrist_X = split_sets_back(merged_testX)
+
+    trainX = np.concatenate((np.array(train_sig_X), np.array(train_wrist_X)), axis=1)
+    trainY = merged_trainY
+    testX = np.concatenate((np.array(test_sig_X), np.array(test_wrist_X)), axis=1)
+    testY = merged_testY
+    return trainX, trainY, testX, testY
 
 def input_test(sig_filename, wrist_filename, username):
     global model, pca, scaler_sig, pca_sig, scaler_wrist, pca_wrist, class_model

@@ -78,13 +78,9 @@ while True:
     #     clicked1 = False
     if clicked2:
         (train_sig_X, train_sig_Y, test_sig_X, test_sig_Y,
-         train_img_X, train_img_Y, test_img_X, test_img_Y,
          train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y) = feature_extraction2()
         (trainX, trainY, testX, testY) = transformations_concatenation1(train_sig_X, train_sig_Y, test_sig_X,
-                                                                        test_sig_Y,
-                                                                        train_img_X, train_img_Y, test_img_X,
-                                                                        test_img_Y,
-                                                                        train_wrist_X, train_wrist_Y, test_wrist_X,
+                                                                        test_sig_Y,train_wrist_X, train_wrist_Y, test_wrist_X,
                                                                         test_wrist_Y)
         class_model = training_testing_report2(trainX, trainY, testX, testY)
         # input_test(cv2.imread("users/Szymon/faces/img_130122200553.jpg"), "users/Szymon/signatures/predict1.txt", "users/Szymon/wrist_gyroscope/20220322_152308_Gyroscope.csv", "Szymon")
@@ -97,7 +93,7 @@ while True:
             # if len(faces) != 0:
             #     for (x, y, w, h) in faces:
             #         img_to_photo = img[y:y + w, x:x + h]
-            u = predikt()
+            # u = predikt()
             u = input_test('predict/signature.txt', 'predict/wrist.csv',str(whoami.get()))
             #         predicted_user.config(text=str(u))
             # else:

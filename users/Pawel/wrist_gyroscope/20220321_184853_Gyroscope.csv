@@ -1,4 +1,4 @@
-Log start on,2022-03-21 18:48:53
+++++++++++++Log start on,2022-03-21 18:48:53
 Feature,Gyroscope
 Nodes,WeSU @41A8E9, 
 Date,HostTimestamp (ms),NodeName,NodeTimestamp,RawData,X (dps),Y (dps),Z (dps),
