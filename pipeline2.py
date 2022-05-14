@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import librosa
 import pandas as pd
-import tensorflow as tf
+# import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import classification_report
@@ -89,8 +89,7 @@ def split_sets_back(merged_matrix):
         img_matrix.append(it[0])
         sig_matrix.append(it[1])
         wrist_matrix.append(it[2])
-    return img_matrix,sig_matrix, wrist_matrix
-
+    return img_matrix,sig_matrix, wrist_matrixc
 
 def split_mono_set(array, labels,seed):
     traincX = []
@@ -411,17 +410,17 @@ def transformations_concatenation1(train_sig_X, train_sig_Y, test_sig_X, test_si
   testY=merged_testY
   return trainX, trainY, testX, testY
 
-def input_test(img, sig_filename, wrist_filename, username):
+def input_test(sig_filename, wrist_filename, username):
     global model, pca, scaler_sig, pca_sig, scaler_wrist, pca_wrist, class_model
-    img=np.array(img)
-    img = cv2.resize(img, (120, 120))
-    img = np.array(img)
+    # img=np.array(img)
+    # img = cv2.resize(img, (120, 120))
+    # img = np.array(img)
     signature = read_signature(sig_filename)
     sig_stats = get_stats(signature)
     wrist_stats=read_wrist_csv(wrist_filename)
 
-    img_X= model.predict(np.array([img]))
-    img_X= pca.transform(np.array(img_X))
+    # img_X= model.predict(np.array([img]))
+    # img_X= pca.transform(np.array(img_X))
 
     sig_X = scaler_sig.transform(np.array([sig_stats]))
     sig_X = pca_sig.transform(sig_X)
@@ -429,7 +428,7 @@ def input_test(img, sig_filename, wrist_filename, username):
     wrist_X = scaler_wrist.transform(np.array([wrist_stats]))
     wrist_X = pca_wrist.transform(wrist_X)
 
-    X = np.concatenate((np.array(img_X), np.array(sig_X), np.array(wrist_X)), axis=1)
+    X = np.concatenate((np.array(sig_X), np.array(wrist_X)), axis=1)
     answer=decision_module(class_model, X, labels.index(username))
     print(answer)
     return answer

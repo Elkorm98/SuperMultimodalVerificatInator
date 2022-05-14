@@ -32,10 +32,10 @@ def click_3():
     clicked3 = True
 
 
-face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+# face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 root = tk.Tk()
-take_photo = tk.Button(root, text="Take a photo", command=click_1)
+# take_photo = tk.Button(root, text="Take a photo", command=click_1)
 create_model = tk.Button(root, text="Create model", command=click_2)
 predict_user = tk.Button(root, text="Predict user", command=click_3)
 
@@ -43,7 +43,7 @@ v = tk.StringVar(root, value='Kim jestes?')
 user_name = tk.Entry(root)
 whoami = tk.Entry(root,textvariable=v)
 predicted_user = tk.Label(root, text="")
-take_photo.grid(row=1, column=1)
+# take_photo.grid(row=1, column=1)
 create_model.grid(row=2, column=1)
 predict_user.grid(row=3, column=1)
 user_name.grid(row=1, column=2)
@@ -58,24 +58,24 @@ cap = cv2.VideoCapture(0)
 # cap = cv2.VideoCapture('filename.mp4')
 
 while True:
-    _,img = cap.read()
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # _,img = cap.read()
+    # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    #
+    # blue, green, red = cv2.split(img)
+    # img2 = cv2.merge((red, green, blue))
 
-    blue, green, red = cv2.split(img)
-    img2 = cv2.merge((red, green, blue))
-
-    img_tk = ImageTk.PhotoImage(Image.fromarray(img2))
-    l['image'] = img_tk
-    if clicked1:
-        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-        if len(faces) != 0:
-            for (x, y, w, h) in faces:
-                img_to_photo = img[y:y + w, x:x + h]
-            un = user_name.get()
-            take_a_photo(img_to_photo, un)
-        else:
-            predicted_user.config(text="Nie wykryto twarzy!")
-        clicked1 = False
+    # img_tk = ImageTk.PhotoImage(Image.fromarray(img2))
+    # l['image'] = img_tk
+    # if clicked1:
+    #     faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+    #     if len(faces) != 0:
+    #         for (x, y, w, h) in faces:
+    #             img_to_photo = img[y:y + w, x:x + h]
+    #         un = user_name.get()
+    #         take_a_photo(img_to_photo, un)
+    #     else:
+    #         predicted_user.config(text="Nie wykryto twarzy!")
+    #     clicked1 = False
     if clicked2:
         (train_sig_X, train_sig_Y, test_sig_X, test_sig_Y,
          train_img_X, train_img_Y, test_img_X, test_img_Y,
@@ -93,15 +93,15 @@ while True:
         clicked2 = False
     if clicked3:
         if is_model:
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-            if len(faces) != 0:
-                for (x, y, w, h) in faces:
-                    img_to_photo = img[y:y + w, x:x + h]
-                    #u = predikt(img_to_photo)
-                    u = input_test(img_to_photo, 'predict/signature.txt', 'predict/wrist.csv',str(whoami.get()))
-                    predicted_user.config(text=str(u))
-            else:
-                 predicted_user.config(text="Nie wykryto twarzy!")
+            # faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            # if len(faces) != 0:
+            #     for (x, y, w, h) in faces:
+            #         img_to_photo = img[y:y + w, x:x + h]
+            u = predikt()
+            u = input_test('predict/signature.txt', 'predict/wrist.csv',str(whoami.get()))
+            #         predicted_user.config(text=str(u))
+            # else:
+            #      predicted_user.config(text="Nie wykryto twarzy!")
         else:
             predicted_user.config(text="Nie utworzono modelu!")
         clicked3 = False

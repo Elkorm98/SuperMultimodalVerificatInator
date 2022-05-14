@@ -92,16 +92,16 @@ def pca_algorithm():
 
 
 
-def predikt(img_to_photo):
-    img_to_photo = cv2.resize(img_to_photo, (50, 50))
-    img_to_photo = cv2.cvtColor(img_to_photo, cv2.COLOR_BGR2GRAY)
-    img_to_photo = img_to_photo.flatten()
+def predikt():
+    # img_to_photo = cv2.resize(img_to_photo, (50, 50))
+    # img_to_photo = cv2.cvtColor(img_to_photo, cv2.COLOR_BGR2GRAY)
+    # img_to_photo = img_to_photo.flatten()
     signature = read_signature('users/Pawel/signatures/P30.txt')
     stats = np.array(get_stats(signature))
     stats=scaler.transform(stats.reshape(1, -1))
 
-    pca_trans_inp=pca.transform(np.array([img_to_photo]))
-    pca_trans_inp=pca_trans_inp*alfa+stats*beta
+    # pca_trans_inp=pca.transform(np.array([img_to_photo]))
+    pca_trans_inp=stats*beta
     pred = model.predict(pca_trans_inp)
     pred_proba = model.predict_proba(pca_trans_inp)
     return labels[pred[0]]
