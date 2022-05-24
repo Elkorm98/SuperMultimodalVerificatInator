@@ -12,37 +12,43 @@ from sklearn.naive_bayes import GaussianNB
 import sqlite3
 
 def read_wrist_csv2(filename):
-  dataframe = pd.read_csv(filename, skiprows=3)
-  features=[]
+    dataframe = pd.read_csv(filename, skiprows=3)
+    features = []
 
-  dataframe = dataframe.sort_values(by='HostTimestamp (ms)')
-  dataframediff = dataframe[['X (dps)','Y (dps)','Z (dps)','HostTimestamp (ms)']].diff(periods=1)
-  dataframediff=dataframediff[dataframediff['HostTimestamp (ms)']>15]
-  # print(np.mean(dataframediff['HostTimestamp (ms)']))
-  # print(dataframediff['HostTimestamp (ms)'])
-  # print(dataframediff.shape)
-  fs=1/np.mean(dataframediff['HostTimestamp (ms)'])*1000
-  rms=librosa.feature.rms(y=np.array(dataframediff['X (dps)']))
-  features += [np.mean(rms)]
-  features += [np.std(rms)]
-  rms=librosa.feature.rms(y=np.array(dataframediff['Y (dps)']))
-  features += [np.mean(rms)]
-  features += [np.std(rms)]
-  rms=librosa.feature.rms(y=np.array(dataframediff['Z (dps)']))
-  features += [np.mean(rms)]
-  features += [np.std(rms)]
+    dataframe = dataframe.sort_values(by='HostTimestamp (ms)')
 
-  zrc=librosa.feature.zero_crossing_rate(y=np.array(dataframediff['X (dps)']))
-  features += [np.mean(zrc)]
-  features += [np.std(zrc)]
-  zrc=librosa.feature.zero_crossing_rate(y=np.array(dataframediff['Y (dps)']))
-  features += [np.mean(zrc)]
-  features += [np.std(zrc)]
-  zrc=librosa.feature.zero_crossing_rate(y=np.array(dataframediff['Z (dps)']))
-  features += [np.mean(zrc)]
-  features += [np.std(zrc)]
+    dataframediff = dataframe[['X (dps)', 'Y (dps)', 'Z (dps)', 'HostTimestamp (ms)']]
 
-  return features
+    dataframediff = dataframediff.diff(periods=1)
+    dataframediff = dataframediff[dataframediff['HostTimestamp (ms)'] > 15]
+    dataframediff = dataframediff.head(80)
+    # print(np.mean(dataframediff['HostTimestamp (ms)']))
+    # print(dataframediff['HostTimestamp (ms)'])
+    # print(dataframediff.shape)
+    fs = 1 / np.mean(dataframediff['HostTimestamp (ms)']) * 1000
+
+    rms = librosa.feature.rms(y=np.array(dataframediff['X (dps)']))
+    features += [np.mean(rms)]
+    features += [np.std(rms)]
+    rms = librosa.feature.rms(y=np.array(dataframediff['Y (dps)']))
+    features += [np.mean(rms)]
+    features += [np.std(rms)]
+    rms = librosa.feature.rms(y=np.array(dataframediff['Z (dps)']))
+    features += [np.mean(rms)]
+    features += [np.std(rms)]
+    try:
+        zrc = librosa.feature.zero_crossing_rate(y=np.array(dataframediff['X (dps)']))
+        features += [np.mean(zrc)]
+        features += [np.std(zrc)]
+        zrc = librosa.feature.zero_crossing_rate(y=np.array(dataframediff['Y (dps)']))
+        features += [np.mean(zrc)]
+        features += [np.std(zrc)]
+        zrc = librosa.feature.zero_crossing_rate(y=np.array(dataframediff['Z (dps)']))
+        features += [np.mean(zrc)]
+        features += [np.std(zrc)]
+    except:
+        print(filename)
+    return features
 
 
 def read_wrist_csv(filename):
@@ -294,8 +300,8 @@ seed=25
 decision_threshold=0.6
 # comp_discard=3
 comp_img=20
-comp_sig=8
-comp_wrist=4
+comp_sig=10
+comp_wrist=6
 labels = []
 
 def feature_extraction2():
@@ -327,7 +333,7 @@ def feature_extraction2():
                 signature_labels.append(labels.index(user))
         for filename in os.listdir(f'{root}/{user}/wrist_gyroscope'):
             # print(f'{root}/{user}/wrist_gyroscope/{filename}')
-            wrist_matrix.append(read_wrist_csv(f'{root}/{user}/wrist_gyroscope/{filename}'))
+            wrist_matrix.append(read_wrist_csv2(f'{root}/{user}/wrist_gyroscope/{filename}'))
             # print(img.shape)
             wrist_labels.append(labels.index(user))
 
@@ -345,7 +351,7 @@ def training_testing_report2(trainX, trainY, testX, testY):
   print(res)
   return class_model
 
-def transformations_concatenation1(train_sig_X, train_sig_Y, test_sig_X, test_sig_Y,
+def transformations_concatenation1(model_mode,train_sig_X, train_sig_Y, test_sig_X, test_sig_Y,
                                      train_wrist_X, train_wrist_Y, test_wrist_X, test_wrist_Y):
     global labels, scaler_sig, pca_sig, scaler_wrist, pca_wrist, image_matrix, image_labels, wrist_matrix, signature_features_matrix, signature_labels, wrist_labels
 
@@ -386,20 +392,31 @@ def transformations_concatenation1(train_sig_X, train_sig_Y, test_sig_X, test_si
                                                    test_sig_Y, test_wrist_Y)
     test_sig_X, test_wrist_X = split_sets_back(merged_testX)
 
-    trainX = np.concatenate((np.array(train_sig_X), np.array(train_wrist_X)), axis=1)
-    trainY = merged_trainY
-    testX = np.concatenate((np.array(test_sig_X), np.array(test_wrist_X)), axis=1)
-    testY = merged_testY
+    if model_mode=='both':
+        trainX = np.concatenate((np.array(train_sig_X), np.array(train_wrist_X)), axis=1)
+        trainY = merged_trainY
+        testX = np.concatenate((np.array(test_sig_X), np.array(test_wrist_X)), axis=1)
+        testY = merged_testY
+    elif model_mode == 'signature':
+        trainX = np.array(train_sig_X)
+        trainY = merged_trainY
+        testX = np.array(test_sig_X)
+        testY = merged_testY
+    elif model_mode == 'wrist_gyroscope':
+        trainX = np.array(train_wrist_X)
+        trainY = merged_trainY
+        testX = np.array(test_wrist_X)
+        testY = merged_testY
     return trainX, trainY, testX, testY
 
-def input_test(sig_filename, wrist_filename, username):
+def input_test(sig_filename, wrist_filename, username, model_mode):
     global model, pca, scaler_sig, pca_sig, scaler_wrist, pca_wrist, class_model
     # img=np.array(img)
     # img = cv2.resize(img, (120, 120))
     # img = np.array(img)
     signature = read_signature(sig_filename)
     sig_stats = get_stats(signature)
-    wrist_stats=read_wrist_csv(wrist_filename)
+    wrist_stats=read_wrist_csv2(wrist_filename)
 
     # img_X= model.predict(np.array([img]))
     # img_X= pca.transform(np.array(img_X))
@@ -409,8 +426,13 @@ def input_test(sig_filename, wrist_filename, username):
 
     wrist_X = scaler_wrist.transform(np.array([wrist_stats]))
     wrist_X = pca_wrist.transform(wrist_X)
+    if model_mode == 'both':
+        X = np.concatenate((np.array(sig_X), np.array(wrist_X)), axis=1)
+    elif model_mode == 'signature':
+        X = np.array(sig_X)
+    elif model_mode == 'wrist_gyroscope':
+        X = np.array(wrist_X)
 
-    X = np.concatenate((np.array(sig_X), np.array(wrist_X)), axis=1)
     answer=decision_module(class_model, X, labels.index(username))
     print(answer)
     return answer
